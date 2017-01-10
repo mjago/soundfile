@@ -373,19 +373,22 @@ class SoundFile
 
   def open(filename, mode)
     mode = LibSndFile::Mode.parse(mode.to_s)
+    @info.format = 0 if mode == :read
     @handle = LibSndFile.open(filename, mode, pointerof(@info))
     no_error?
   end
 
-  def open_fd(descriptor : Int32, mode, close_desc)
+  def open_fd(descriptor : Int32, mode, close_desc = false)
     mode = LibSndFile::Mode.parse(mode.to_s)
-    @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_desc)
+    close_d = close_desc ? 1 : 0
+    @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
     no_error?
   end
 
-  def open_file(file : File, mode, close_desc)
+  def open_file(file : File, mode, close_desc = false)
     mode = LibSndFile::Mode.parse(mode.to_s)
-    @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close_desc)
+    close_d = close_desc ? 1 : 0
+    @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close_d)
     no_error?
   end
 
@@ -405,27 +408,11 @@ class SoundFile
   def get_string(type)
     type = LibSndFile::StringType.parse(type).value
     str = LibSndFile.get_string(@handle, type)
-    if str == Pointer(UCChar).null
+    if str == Pointer(Char * ).null
       ""
     else
       String.new(str)
     end
-  end
-
-  def meta_to_hash
-    meta_hash = {} of String => String
-    LibSndFile::StringType.names.each do |x|
-      meta_hash[x.downcase] = get_string(x)
-    end
-    meta_hash
-  end
-
-  def meta_formatted
-    str = String.new
-    LibSndFile::StringType.names.each do |x|
-      str += x.capitalize + ": " + get_string(x) + "\n"
-    end
-    str
   end
 
   def read_raw(ptr, size)
@@ -501,6 +488,7 @@ class SoundFile
   end
 
   def seek(frames, whence)
+    whence = LibSndFile::Whence.parse(whence)
     LibSndFile.seek(@handle, frames, whence)
   end
 
@@ -579,8 +567,8 @@ class SoundFile
     @info.channels
   end
 
-  def seekable
-    @info.seekable
+  def seekable?
+    @info.seekable == 1
   end
 
   def size
@@ -591,20 +579,16 @@ class SoundFile
     ver = Bytes.new(25)
     cmd = LibSndFile::Command::SFC_GET_LIB_VERSION
     LibSndFile.command(@handle, cmd, ver, ver.size)
-    String.new(ver)
+    String.new(ver).strip
   end
 
-  def version
-    ver = Bytes.new(25)
-    cmd = LibSndFile::Command::SFC_GET_LIB_VERSION
-    LibSndFile.command(@handle, cmd, ver, ver.size)
-    String.new(ver)
-  end
-
-  def get_log_info(log = Bytes.new(2048))
+  def get_log_info
+    log = Slice.new(2048, Char)
+#    log = Bytes.new(2048)
     cmd = LibSndFile::Command::SFC_GET_LOG_INFO
-    return nil unless LibSndFile.command(@handle, cmd, log, log.size) > 0
-    log
+    LibSndFile.command(@handle, cmd, log, log.size)
+#    return nil unless LibSndFile.command(@handle, cmd, log, log.size) > 0
+#    String.new(log)
   end
 
   def calc_signal_max
@@ -627,14 +611,14 @@ class SoundFile
     max = Slice.new(channels, Float64.new(0.0))
     cmd = LibSndFile::Command::SFC_CALC_MAX_ALL_CHANNELS
     return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 0
-    max
+    max.to_a
   end
 
   def calc_norm_max_all_channels
     max = Slice.new(channels, Float64.new(0.0))
     cmd = LibSndFile::Command::SFC_CALC_NORM_MAX_ALL_CHANNELS
     return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 0
-    max
+    max.to_a
   end
 
   def get_signal_max
@@ -649,7 +633,7 @@ class SoundFile
     max = Slice.new(channels, Float64.new(0.0))
     cmd = LibSndFile::Command::SFC_GET_MAX_ALL_CHANNELS
     return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 1
-    max
+    max.to_a
   end
 
   def set_norm_float(val)
@@ -701,7 +685,7 @@ class SoundFile
     cmd = LibSndFile::Command::SFC_GET_SIMPLE_FORMAT
     size = sizeof(LibSndFile::SFFormatInfo)
     return nil unless LibSndFile.command(@handle, cmd, ptr, size) == 0
-    ptr
+    format_info
   end
 
   def get_format_info

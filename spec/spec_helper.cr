@@ -1,2 +1,2 @@
 require "spec"
-require "../src/sndfile"
+require "../src/soundfile"
