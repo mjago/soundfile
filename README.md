@@ -1,4 +1,4 @@
-# sndfile
+# soundfile
 
 TODO: Write a description here
 
@@ -8,17 +8,17 @@ Add this to your application's `shard.yml`:
 
 ```yaml
 dependencies:
-  sndfile:
-    github: mjago/sndfile
+  soundfile:
+    github: mjago/soundfile
 ```
 
 ## Usage
 
 ```crystal
-require "sndfile"
+require "soundfile"
 ```
 
-TODO: Write usage instructions here
+Requires libsndfile
 
 ## Development
 
@@ -26,7 +26,7 @@ TODO: Write development instructions here
 
 ## Contributing
 
-1. Fork it ( https://github.com/mjago/sndfile/fork )
+1. Fork it ( https://github.com/mjago/soundfile/fork )
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)
