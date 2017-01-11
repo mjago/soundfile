@@ -687,37 +687,71 @@ describe SFile do
     end
   end
 
-#      puts String.new(finfo.name)
-#      puts String.new(finfo.extension)
-#      puts finfo.format.to_s(16)
+  describe "#get_format_major" do
+    it "retrieves the number of major formats" do
+      finfo = SFile.format_info
+      finfo.format = (LibSndFile::Formats::WAV.value)
+      finfo = a.get_format_info(finfo)
+      fmt = a.get_format_major(finfo)
+      String.new(finfo.name).should eq "WAV (Microsoft)"
+      String.new(finfo.extension).should eq "wav"
+      finfo.format.to_s(16).should eq "10000"
+      a.close
+    end
+  end
 
   describe "#set_add_peak_chunk" do
-    pending "" do
+    it "the addition of a PEAK chunk can be turned on or off" do
+      SFile.open("spec/data/write.wav", :write) do |file|
+        file.set_add_peak_chunk(true).should eq 0
+        file.set_add_peak_chunk(false).should eq 0
+      end
     end
   end
 
   describe "#update_header_now" do
-    pending "" do
-      cmd = LibSndFile::Command::SFC_UPDATE_HEADER_NOW
-      LibSndFile.command(@handle, cmd, nil, 0)
+    it "should set the update header now flag" do
+      a.update_header_now.should eq 0
     end
   end
 
   describe "#set_update_header_auto(val)" do
-    pending "" do
-      true_false = val == :true ? sf_true : sf_false
-      cmd = LibSndFile::Command::SFC_SET_UPDATE_HEADER_AUTO
-      LibSndFile.command(@handle, cmd, nil, true_false)
+    it "should set the update header auto flag" do
+      SFile.open("spec/data/write.wav", :write) do |file|
+        file.set_update_header_auto(true).should eq 0
+        file.set_update_header_auto(false).should eq 0
+      end
     end
   end
 
-  describe "#file_truncate(frames : Int32)" do
-    pending "" do
+  describe "#file_truncate" do
+    it "truncates a file opened for write or read/write" do
+      SFile.open(test_wav, :read) do |infile|
+        ptr = Slice.new(infile.size, Int32.new(0))
+        infile.read_int(ptr, infile.size).should eq infile.size
+
+        SFile.open("spec/data/write.wav", :write, infile.info) do |file|
+          file.write_int(ptr, infile.size).should eq infile.size
+          file.file_truncate(1024).should eq 0
+        end
+      end
+
+      SFile.open("spec/data/write.wav", :read) do |infile|
+        infile.frames.should eq 1024
+      end
     end
   end
 
-  describe "#set_raw_start_offset(frames : Int32)" do
-    pending "" do
+  describe "#set_raw_start_offset" do
+    pending "changes the data start offset for files opened up as SF_FORMAT_RAW" do
+      a.open(test_wav, :read)
+      ptr = Slice.new(a.size, UInt8.new(0))
+      a.read_raw(ptr, a.size).should eq a.size
+      pp a.info
+      ptr[7000].should eq 166
+      ptr[7004].should eq 229
+      a.set_raw_start_offset(5).should eq 0
+      a.close
     end
   end
 

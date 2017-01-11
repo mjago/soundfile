@@ -789,8 +789,8 @@ module SoundFile
     end
 
     def file_truncate(frames : Int32)
-      frames = LibSndFile::SFCount.new(frames)
-      ptr = pointerof(frames)
+      sfcount = LibSndFile::SFCount.new(frames)
+      ptr = pointerof(sfcount)
       cmd = LibSndFile::Command::SFC_FILE_TRUNCATE
       LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFCount))
     end
