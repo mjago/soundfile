@@ -20,4 +20,4 @@ install:
   #  - find /usr/local/lib -type f -name "*.la" -exec sudo rm -f {} \+
 
 script:
-  - crystal spec spec/soundfile_spec.cr
+  - crystal spec /home/travis/build/mjago/soundfile/spec/soundfile_spec.cr
