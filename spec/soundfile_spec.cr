@@ -592,9 +592,9 @@ describe SFile do
   describe "#set_norm_float" do
     it "modifies the normalisation behaviour of the floating point reading and writing functions" do
       a.open(test_wav, :read)
-      a.set_norm_float(:true).should eq 1
+      a.set_norm_float(true).should eq 1
       a.get_norm_float.should eq 1
-      a.set_norm_float(:false).should eq 1
+      a.set_norm_float(false).should eq 1
       a.get_norm_float.should eq 0
       a.close
     end
@@ -603,9 +603,9 @@ describe SFile do
   describe "#set_norm_double" do
     it "modifies the normalisation behaviour of the double floating point reading and writing functions" do
       a.open(test_wav, :read)
-      a.set_norm_double(:true).should eq 1
+      a.set_norm_double(true).should eq 1
       a.get_norm_double.should eq 1
-      a.set_norm_double(:false).should eq 1
+      a.set_norm_double(false).should eq 1
       a.get_norm_double.should eq 0
       a.close
     end
@@ -614,8 +614,8 @@ describe SFile do
   describe "#set_scale_float_int_read" do
     it "Sets/clears the scale factor when integer (short/int) data is read from a file containing floating point data" do
       a.open(test_wav, :read)
-      a.set_scale_float_int_read(:true).should eq 0
-      a.set_scale_float_int_read(:false).should eq 1
+      a.set_scale_float_int_read(true).should eq 0
+      a.set_scale_float_int_read(false).should eq 1
       a.close
     end
   end
@@ -755,18 +755,18 @@ describe SFile do
     end
   end
 
-  describe "#set_clipping(val)" do
-    pending "" do
-      true_false = val == :true ? sf_true : sf_false
-      cmd = LibSndFile::Command::SFC_SET_CLIPPING
-      LibSndFile.command(@handle, cmd, nil, true_false)
+  describe "#set_clipping" do
+    it "turns on/off automatic clipping when doing floating point to integer conversion" do
+      SFile.open("spec/data/write.ogg", :write) do |ogg|
+        ogg.set_clipping(false).should eq 0
+        ogg.set_clipping(true).should eq 0
+      end
     end
   end
 
   describe "#get_clipping" do
-    pending "" do
-      cmd = LibSndFile::Command::SFC_GET_CLIPPING
-      LibSndFile.command(@handle, cmd, nil, 0)
+    it "retrieves current clipping setting" do
+      a.get_clipping.should eq 0
     end
   end
 
@@ -801,32 +801,27 @@ describe SFile do
     end
   end
 
-  describe "#set_vbr_encoding_quality(quality : Float64)" do
-    pending "" do
-      if (quality < 0.0) || (quality > 1.0)
-        raise "Error: Invalid vbr encoding quality"
+  describe "#set_vbr_encoding_quality" do
+    it "sets the vbr encoding quality" do
+      SFile.open("spec/data/write.ogg", :write) do |ogg|
+        ogg.set_vbr_encoding_quality(0.0).should eq 0
+        ogg.set_vbr_encoding_quality(1.0).should eq 0
       end
-      quality_ptr = pointerof(quality)
-      cmd = LibSndFile::Command::SFC_SET_VBR_ENCODING_QUALITY
-      LibSndFile.command(@handle, cmd, quality_ptr, sizeof(Float64))
     end
   end
 
-  describe "#set_compression_level(level : Float64)" do
-    pending "" do
-      if (level < 0.0) || (level > 1.0)
-        raise "Error: Invalid compression level"
+  describe "#set_compression_level" do
+    it "sets the compression level" do
+      SFile.open("spec/data/write.ogg", :write) do |ogg|
+        ogg.set_compression_level(0.0).should eq 0
+        ogg.set_compression_level(1.0).should eq 0
       end
-      level_ptr = pointerof(level)
-      cmd = LibSndFile::Command::SFC_SET_COMPRESSION_LEVEL
-      LibSndFile.command(@handle, cmd, level_ptr, sizeof(Float64))
     end
   end
 
   describe "#raw_data_needs_endswap" do
-    pending "" do
-      cmd = LibSndFile::Command::SFC_RAW_DATA_NEEDS_ENDSWAP
-      LibSndFile.command(@handle, cmd, nil, 0)
+    it "determines if raw data read using sf_read_raw needs to be end swapped on the host CPU" do
+      a.raw_data_needs_endswap.should eq 0
     end
   end
 
@@ -885,12 +880,8 @@ describe SFile do
   end
 
   describe "#get_cue_count" do
-    pending "" do
-      count = UInt32.new(0)
-      cmd = LibSndFile::Command::SFC_GET_CUE_COUNT
-      res = LibSndFile.command(@handle, cmd, pointerof(count), sizeof(UInt32))
-      raise "Error getting cue count" unless res == 0
-      count
+    it "retrieves the number of cue markers available for retrieval using the SFC_GET_CUE command" do
+      a.get_cue_count.should eq 0
     end
   end
 
@@ -910,10 +901,11 @@ describe SFile do
   end
 
   describe "#rf64_auto_downgrade(val)" do
-    pending "" do
-      true_false = val == :true ? sf_true : sf_false
-      cmd = LibSndFile::Command::SFC_RF64_AUTO_DOWNGRADE
-      LibSndFile.command(@handle, cmd, nil, true_false)
+    it "enable auto downgrade from RF64 to WAV" do
+      SFile.open("spec/data/write.wav", :write) do |file|
+        file.rf64_auto_downgrade(false).should eq 0
+        file.rf64_auto_downgrade(true).should eq 0
+      end
     end
   end
 end

@@ -690,13 +690,13 @@ module SoundFile
     end
 
     def set_norm_float(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_SET_NORM_FLOAT
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
 
     def set_norm_double(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_SET_NORM_DOUBLE
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
@@ -712,13 +712,13 @@ module SoundFile
     end
 
     def set_scale_float_int_read(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_SET_SCALE_FLOAT_INT_READ
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
 
     def set_scale_int_float_write(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_SET_SCALE_INT_FLOAT_WRITE
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
@@ -772,7 +772,7 @@ module SoundFile
     end
 
     def set_add_peak_chunk(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_SET_ADD_PEAK_CHUNK
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
@@ -783,7 +783,7 @@ module SoundFile
     end
 
     def set_update_header_auto(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_SET_UPDATE_HEADER_AUTO
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
@@ -803,7 +803,7 @@ module SoundFile
     end
 
     def set_clipping(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val == true ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_SET_CLIPPING
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
@@ -921,7 +921,7 @@ module SoundFile
     end
 
     def rf64_auto_downgrade(val)
-      true_false = val == :true ? sf_true : sf_false
+      true_false = val ? sf_true : sf_false
       cmd = LibSndFile::Command::SFC_RF64_AUTO_DOWNGRADE
       LibSndFile.command(@handle, cmd, nil, true_false)
     end
