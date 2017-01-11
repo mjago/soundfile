@@ -18,3 +18,6 @@ install:
   - cd libsndfile/build && ../configure --disable-silent-rules && make && sudo make install
   #  ## remove libtool libs
   #  - find /usr/local/lib -type f -name "*.la" -exec sudo rm -f {} \+
+
+script:
+  - crystal spec spec/soundfile_spec.cr
