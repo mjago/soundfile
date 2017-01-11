@@ -20,7 +20,23 @@ dependencies:
 require "soundfile"
 ```
 
-Requires libsndfile
+### Read and write files
+
+```crystal
+
+SoundFile.open("read.wav", :read) do |sf_in|
+  ptr = Slice.new(sf_in.size, Int32.new(0))
+  sf.read_int(ptr, sf_in.size)
+
+  SoundFile.open("write.wav", :write, sf_in.info) do |sf_out|
+    sf_out.write_int(ptr, sf_in.size)
+  end
+end
+
+```
+
+## Dependencies
+1. libsndfile
 
 ## Development
 
