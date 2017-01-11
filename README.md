@@ -34,7 +34,7 @@ SFile.open("read.wav", :read) do |sf_in|
 end
 ```
 
-See specs and [libsndfile](http://www.mega-nerd.com/libsndfile/) for further usage
+See [specs](https://github.com/mjago/soundfile/blob/master/spec/soundfile_spec.cr) and [libsndfile](http://www.mega-nerd.com/libsndfile/) for further usage
 
 ## Dependencies
 1. [libsndfile](http://www.mega-nerd.com/libsndfile/)
