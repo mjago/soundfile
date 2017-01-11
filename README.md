@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/mjago/soundfile.svg?branch=master)](https://travis-ci.org/mjago/CW)
+[![Build Status](https://travis-ci.org/mjago/soundfile.svg?branch=master)](https://travis-ci.org/mjago/soundfile)
 
 # soundfile
 
-TODO: Write a description here
+Crystal extension for the [libsndfile](http://www.mega-nerd.com/libsndfile/) _soundfile manipulation_ library
 
 ## Installation
 
@@ -34,6 +34,8 @@ SoundFile.open("read.wav", :read) do |sf_in|
 end
 
 ```
+
+See specs and [libsndfile](http://www.mega-nerd.com/libsndfile/) for further usage
 
 ## Dependencies
 1. [libsndfile](http://www.mega-nerd.com/libsndfile/)
