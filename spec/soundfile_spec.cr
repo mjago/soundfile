@@ -1,6 +1,5 @@
 require "./spec_helper"
 require "tempfile"
-#require "soundfile"
 require "./../../soundfile/src/soundfile.cr"
 
 describe SoundFile do
@@ -37,6 +36,7 @@ describe SoundFile do
     it "returns false when opening a non-existing file for read" do
       a.open("invalid.wav", :read).should eq false
       a.close
+
     end
 
     it "returns true when opening a valid file for read" do
@@ -47,6 +47,13 @@ describe SoundFile do
     it "returns true when opening a valid file for read/write" do
       a.open(test_wav, :rd_wr).should be_true
       a.close
+    end
+
+    it "can be invoked with a block" do
+      a.open("test_wav", :read) do |sf|
+        sf.class.should eq SoundFile
+        sf.info.class.should eq LibSndFile::SFInfo
+      end
     end
 
 #    it "returns true when opening a file for write" do
@@ -63,41 +70,144 @@ describe SoundFile do
   end
 
   describe "#open_fd" do
-    it "can open a file given a file descriptor" do
-      File.open(test_wav, "r") do |f|
+    File.open(test_wav, "r") do |f|
+      it "can open a file given a file descriptor" do
         a.open_fd(f.fd, :read).should be_true
         a.close
+      end
+
+      it "can be invoked with a block" do
+        a.open_fd(f.fd, :read) do |sf|
+          sf.class.should eq SoundFile
+          sf.info.class.should eq LibSndFile::SFInfo
+        end
       end
     end
   end
 
   describe "#open_file" do
-    it "can open a file given a file object" do
-      File.open(test_wav, "r") do |f|
+    File.open(test_wav, "r") do |f|
+      it "can open a file given a file object" do
         a.open_file(f, :read).should be_true
         a.close
+      end
+    end
+
+    File.open(test_wav, "r") do |f|
+      it "can be invoked with a block" do
+        a.open_file(f, :read) do |sf|
+          sf.class.should eq SoundFile
+          sf.info.class.should eq LibSndFile::SFInfo
+        end
+      end
+    end
+  end
+
+  describe "@open" do
+    it "can call open on Soundfile" do
+      SoundFile.open(test_wav, :read) do |sf|
+        sf.error_number.should eq 0
+        sf.class.should eq SoundFile
+        sf.info.class.should eq LibSndFile::SFInfo
+        ptr = Slice.new(sf.size, Int32.new(0))
+        sf.read_int(ptr, sf.size).should eq sf.size
+        SoundFile.open("spec/data/write5.wav", :write, sf.info) do |sf_out|
+          sf.size
+          sf_out.write_int(ptr, sf.size)
+          sf.error_to_s
+        end
+      end
+    end
+  end
+
+  describe "self.open" do
+    it "can be invoked with a block" do
+      SoundFile.open(test_wav, :read) do |sf|
+        sf.error_number.should eq 0
+        sf.size.should eq 256_000
+        ptr = Slice.new(sf.size, Int32.new(0))
+        sf.read_int(ptr, sf.size).should eq sf.size
+        SoundFile.open("spec/data/write5.wav", :write, sf.info) do |sf_out|
+          sf.error_number.should eq 0
+          sf.size.should eq sf.size
+          size = sf_out.write_int(ptr, sf.size)
+          size.should eq 256_000
+        end
       end
     end
   end
 
   describe "#set_string/get_string" do
     it "can write meta data to a file open for write" do
-      File.open("spec/data/write.wav", "w") do |f|
-        a.open_file(f, :write).should be_true
-        a.set_string("My Title", "title")
-        a.get_string("title").should eq "My Title"
-        a.close
+      info = SoundFile.info
+      info.format = 0x10002
+      info.channels = 2
+      info.samplerate = 44_100
+      sf = SoundFile.new(info)
+      sf.open("spec/data/write.wav", :write)
+      sf.error_number.should eq 0
+      sf.set_string("My Title", "title")
+      sf.get_string("title").should eq "My Title"
+      sf.get_string("title").should eq "My Title"
+      sf.close
+
+      info = SoundFile.info
+      info.format = 0x10002
+      info.channels = 2
+      info.samplerate = 44_100
+      sf = SoundFile.new(info)
+      sf.open("spec/data/write.wav", :write) do |sf|
+        sf.get_string("title").should eq ""
+        sf.set_string("My Title", "title")
+        sf.get_string("title").should eq "My Title"
+        sf["title"].should eq "My Title"
+       end
+
+      info = SoundFile.info
+      info.format = 0x10002
+      info.channels = 2
+      info.samplerate = 44_100
+      SoundFile.open("spec/data/write.wav", :write, info) do |sf|
+        sf.error_number.should eq 0
+        sf.get_string("title").should eq ""
+        sf.set_string("My Title", "title")
+        sf.get_string("title").should eq "My Title"
+        sf["title"].should eq "My Title"
+      end
+    end
+  end
+
+  describe "#set_string/get_string" do
+    it "can write meta data to a file open for write" do
+      File.open("spec/data/write3.wav", "w") do |f|
+        info = SoundFile.info
+        info.format = 0x10002
+        info.channels = 2
+        info.samplerate = 44_100
+        b = SoundFile.new(info)
+        b.open_file(f, :write)#.should be_true
+        b.error_number.should eq 0
+        b.get_string("title").should eq ""
+        b.set_string("My Title", "title")
+        b.get_string("title").should eq "My Title"
+        b["title"].should eq "My Title"
+        b.close
       end
     end
   end
 
   describe "#[]" do
     it "can write meta data to a file open for write" do
+      info = SoundFile.info
+      info.format = 0x10002
+      info.channels = 2
+      info.samplerate = 44_100
       File.open("spec/data/write.wav", "w") do |f|
-        a.open_file(f, :write).should be_true
-        a["album"] = "My Album"
-        a["album"].should eq "My Album"
-        a.close
+        a.info = info
+        a.open_file(f, :write) do |fs|
+          fs["album"] = "My Album"
+          fs["album"].should eq "My Album"
+        end
       end
     end
   end
@@ -362,7 +472,7 @@ describe SoundFile do
   describe "frames" do
     it "returns number of frames" do
       a.open(test_wav, :read)
-      a.frames.should eq 1_058_688
+      a.frames.should eq 128_000
       a.close
     end
   end
@@ -385,18 +495,20 @@ describe SoundFile do
 
   describe "seekable?" do
     it "returns number of seekable" do
-      a.open(test_wav, :read)
-      a.seekable?.should be_true
-      a.close
+      SoundFile.open(test_wav, :read) do |sf|
+        sf.seekable?.should be_true
+        sf.close
+      end
     end
   end
 
   describe "size" do
     it "returns size (frames * channels)" do
-      a.open(test_wav, :read)
-      a.size.should eq 2_117_376
-     a.close
-     end
+      SoundFile.open(test_wav, :read) do |sf|
+        sf.size.should eq 256_000
+        sf.close
+      end
+    end
   end
 
   describe "version" do
@@ -411,32 +523,33 @@ describe SoundFile do
     pending "returns log info string" do
       a.open("spec/data/write.wav", :write)
       a["title"] = "My Title"
-      pp a.get_log_info
-
+      a.get_log_info
       a.close
     end
   end
 
   describe "#calc_signal_max" do
     it "calculates the measured maximum signal value" do
-      a.open(test_wav, :read)
-      a.calc_signal_max.should eq 16563.0
-      a.close
+      SoundFile.open(test_wav, :read) do |sf|
+        sf.calc_signal_max.should eq 9357.0
+        sf.close
+      end
     end
   end
 
   describe "#calc_norm_signal_max" do
     it "calculates the measured normalised maximum signal value" do
-      a.open(test_wav, :read)
-      a.calc_norm_signal_max.should eq 0.505462646484375
-      a.close
+      SoundFile.open(test_wav, :read) do |sf|
+        sf.calc_norm_signal_max.should eq 0.285552978515625
+        sf.close
+      end
     end
   end
 
   describe "#calc_max_all_channels" do
     it "calculates the peak value for each channel" do
       a.open(test_wav, :read)
-      a.calc_max_all_channels.should eq [16563.0, 16563.0]
+      a.calc_max_all_channels.should eq [9357.0, 9357.0]
       a.close
     end
   end
@@ -444,7 +557,7 @@ describe SoundFile do
   describe "#calc_norm_max_all_channels" do
     it "calculates the normalised peak for each channel" do
       a.open(test_wav, :read)
-      a.calc_norm_max_all_channels.should eq [0.505462646484375, 0.505462646484375]
+      a.calc_norm_max_all_channels.should eq [0.285552978515625, 0.285552978515625]
       a.close
     end
   end

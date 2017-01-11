@@ -351,6 +351,75 @@ class SoundFile
   def initialize(@info = LibSndFile::SFInfo.new)
   end
 
+  def self.open(filename, mode, info = LibSndFile::SFInfo.new)
+    info.format = 0 if mode == :read
+    fs = SoundFile.new(info)
+    fs.open(filename, mode)
+    begin
+      yield fs
+    ensure
+      fs.close
+    end
+  end
+
+  def self.info
+    LibSndFile::SFInfo.new
+  end
+
+  def open(filename, mode)
+    mode = LibSndFile::Mode.parse(mode.to_s)
+    @info.format = 0 if mode == :read
+    @handle = LibSndFile.open(filename, mode, pointerof(@info))
+    no_error?
+  end
+
+  def open(filename, mode)
+    mode = LibSndFile::Mode.parse(mode.to_s)
+    @info.format = 0 if mode == :read
+    @handle = LibSndFile.open(filename, mode, pointerof(@info))
+    begin
+      yield self
+    ensure
+      self.close
+    end
+  end
+
+  def open_fd(descriptor : Int32, mode, close_desc = false)
+    mode = LibSndFile::Mode.parse(mode.to_s)
+    close_d = close_desc ? 1 : 0
+    @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
+    no_error?
+  end
+
+  def open_fd(descriptor : Int32, mode, close_desc = false)
+    mode = LibSndFile::Mode.parse(mode.to_s)
+    close_d = close_desc ? 1 : 0
+    @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
+    begin
+      yield self
+    ensure
+      self.close
+    end
+  end
+
+  def open_file(file : File, mode, close_desc = false)
+    mode = LibSndFile::Mode.parse(mode.to_s)
+    close_d = close_desc ? 1 : 0
+    @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close_d)
+    no_error?
+  end
+
+  def open_file(file : File, mode, close_desc = false)
+    mode = LibSndFile::Mode.parse(mode.to_s)
+    close = close_desc ? 1 : 0
+    @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close)
+    begin
+      yield self
+    ensure
+      self.close
+    end
+  end
+
   def sf_true
     LibSndFile::TBool::SF_TRUE
   end
@@ -371,27 +440,6 @@ class SoundFile
     get_simple_format(fmt = 0)
   end
 
-  def open(filename, mode)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    @info.format = 0 if mode == :read
-    @handle = LibSndFile.open(filename, mode, pointerof(@info))
-    no_error?
-  end
-
-  def open_fd(descriptor : Int32, mode, close_desc = false)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    close_d = close_desc ? 1 : 0
-    @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
-    no_error?
-  end
-
-  def open_file(file : File, mode, close_desc = false)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    close_d = close_desc ? 1 : 0
-    @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close_d)
-    no_error?
-  end
-
   def [](type)
     get_string(type)
   end
@@ -408,11 +456,8 @@ class SoundFile
   def get_string(type)
     type = LibSndFile::StringType.parse(type).value
     str = LibSndFile.get_string(@handle, type)
-    if str == Pointer(Char * ).null
-      ""
-    else
-      String.new(str)
-    end
+    return "" unless str
+    String.new(str)
   end
 
   def read_raw(ptr, size)
