@@ -1,0 +1,12 @@
+name: SoundFile
+version: 0.1.0
+
+authors:
+  - mjago <martyn.jago@btinternet.com>
+
+libraries:
+  libsndfile: ~> 1.0.26
+
+crystal: 0.20.1
+
+license: MIT
