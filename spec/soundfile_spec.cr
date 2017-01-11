@@ -662,16 +662,34 @@ describe SFile do
 
   describe "#get_format_major_count" do
     it "retrieves the number of major formats" do
-      a.open(test_wav, :read)
       a.get_format_major_count.should eq 25
       a.close
     end
   end
 
-  describe "#get_format_subtype_count" do
-    pending "" do
+  describe "#get_format_major" do
+    it "retrieves the number of major formats" do
+      finfo = SFile.format_info
+      finfo.format = (LibSndFile::Formats::WAV.value)
+      finfo = a.get_format_info(finfo)
+      fmt = a.get_format_major(finfo)
+      String.new(finfo.name).should eq "WAV (Microsoft)"
+      String.new(finfo.extension).should eq "wav"
+      finfo.format.to_s(16).should eq "10000"
+      a.close
     end
   end
+
+  describe "#get_format_subtype_count" do
+    it "retrieves the number of major formats" do
+      a.get_format_subtype_count.should eq 21
+      a.close
+    end
+  end
+
+#      puts String.new(finfo.name)
+#      puts String.new(finfo.extension)
+#      puts finfo.format.to_s(16)
 
   describe "#set_add_peak_chunk" do
     pending "" do

@@ -756,6 +756,13 @@ module SoundFile
       count
     end
 
+    def get_format_major(finfo : LibSndFile::SFFormatInfo)
+      ptr = pointerof(finfo)
+      cmd = LibSndFile::Command::SFC_GET_FORMAT_MAJOR
+      LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFFormatInfo))
+      finfo
+    end
+
     def get_format_subtype_count
       count = Int32.new(0)
       count_ptr = pointerof(count)
