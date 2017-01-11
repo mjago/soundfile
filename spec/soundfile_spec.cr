@@ -512,10 +512,17 @@ describe SFile do
     end
   end
 
-  describe "version" do
-    it "returns version (frames * channels)" do
+  describe "sf_version" do
+    it "returns libsndfile version" do
       a.open(test_wav, :read)
-      a.version.should contain "libsndfile-1."
+      a.sf_version.should contain "libsndfile-1."
+      a.close
+    end
+  end
+
+  describe "version" do
+    it "returns SoundFile version" do
+      a.version.should be "0.1.0"
       a.close
     end
   end

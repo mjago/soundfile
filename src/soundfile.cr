@@ -622,6 +622,10 @@ module SoundFile
     end
 
     def version
+      VERSION
+    end
+
+    def sf_version
       ver = Bytes.new(25)
       cmd = LibSndFile::Command::SFC_GET_LIB_VERSION
       LibSndFile.command(@handle, cmd, ver, ver.size)
