@@ -200,7 +200,7 @@ lib LibSndFile
   end
 
   enum Loop
-    NONE = 800
+    NONE        = 800
     FORWARD
     BACKWARD
     ALTERNATING
@@ -341,580 +341,585 @@ lib LibSndFile
   fun command = "sf_command"(sndfile : SndFile*, cmd : CInt, data : Void*, datasize : CInt) : CInt
 end
 
-class SoundFile
-  @info : LibSndFile::SFInfo
-  @handle : Pointer(LibSndFile::SndFile) | Nil
+module SoundFile
+  class SFile
+    @info : LibSndFile::SFInfo
+    @handle : Pointer(LibSndFile::SndFile) | Nil
 
-  property info
-  property handle
+    property info
+    property handle
 
-  def initialize(@info = LibSndFile::SFInfo.new)
-  end
+    def initialize(@info = LibSndFile::SFInfo.new)
+    end
 
-  def self.open(filename, mode, info = LibSndFile::SFInfo.new)
-    info.format = 0 if mode == :read
-    fs = SoundFile.new(info)
-    fs.open(filename, mode)
-    begin
-      yield fs
-    ensure
-      fs.close
+    def self.open(filename, mode, info = self.info)
+      info.format = 0 if mode == :read
+      fs = SFile.new(info)
+      fs.open(filename, mode)
+      begin
+        yield fs
+      ensure
+        fs.close
+      end
+    end
+
+    def self.info
+      LibSndFile::SFInfo.new
+    end
+
+    def open(filename, mode)
+      mode = LibSndFile::Mode.parse(mode.to_s)
+      @info.format = 0 if mode == :read
+      @handle = LibSndFile.open(filename, mode, pointerof(@info))
+      no_error?
+    end
+
+    def open(filename, mode)
+      mode = LibSndFile::Mode.parse(mode.to_s)
+      @info.format = 0 if mode == :read
+      @handle = LibSndFile.open(filename, mode, pointerof(@info))
+      begin
+        yield self
+      ensure
+        self.close
+      end
+    end
+
+    def open_fd(descriptor : Int32, mode, close_desc = false)
+      mode = LibSndFile::Mode.parse(mode.to_s)
+      close_d = close_desc ? 1 : 0
+      @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
+      no_error?
+    end
+
+    def open_fd(descriptor : Int32, mode, close_desc = false)
+      mode = LibSndFile::Mode.parse(mode.to_s)
+      close_d = close_desc ? 1 : 0
+      @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
+      begin
+        yield self
+      ensure
+        self.close
+      end
+    end
+
+    def open_file(file : File, mode, close_desc = false)
+      mode = LibSndFile::Mode.parse(mode.to_s)
+      close_d = close_desc ? 1 : 0
+      @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close_d)
+      no_error?
+    end
+
+    def open_file(file : File, mode, close_desc = false)
+      mode = LibSndFile::Mode.parse(mode.to_s)
+      close = close_desc ? 1 : 0
+      @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close)
+      begin
+        yield self
+      ensure
+        self.close
+      end
+    end
+
+    def sf_true
+      LibSndFile::TBool::SF_TRUE
+    end
+
+    def sf_false
+      LibSndFile::TBool::SF_FALSE
+    end
+
+    def extract_format_info(ptr)
+      format_info = ptr.value
+      name = String.new(format_info.name)
+      extension = String.new(format_info.extension)
+      format = format_info.format
+      {name, extension, format}
+    end
+
+    def default_simple_format
+      get_simple_format(fmt = 0)
+    end
+
+    def [](type)
+      get_string(type)
+    end
+
+    def []=(type, str)
+      set_string(str, type)
+    end
+
+    def set_string(str, type)
+      type = LibSndFile::StringType.parse(type).value
+      LibSndFile.set_string(@handle, type, str)
+    end
+
+    def get_string(type)
+      type = LibSndFile::StringType.parse(type).value
+      str = LibSndFile.get_string(@handle, type)
+      return "" unless str
+      String.new(str)
+    end
+
+    def read_raw(ptr, size)
+      LibSndFile.read_raw(@handle, ptr, size)
+    end
+
+    def read_short(ptr, size)
+      LibSndFile.read_short(@handle, ptr, size)
+    end
+
+    def read_int(ptr, size)
+      LibSndFile.read_int(@handle, ptr, size)
+    end
+
+    def read_float(ptr, size)
+      LibSndFile.read_float(@handle, ptr, size)
+    end
+
+    def read_double(ptr, size)
+      LibSndFile.read_double(@handle, ptr, size)
+    end
+
+    def readf_short(ptr, size)
+      LibSndFile.read_short(@handle, ptr, size)
+    end
+
+    def readf_int(ptr, size)
+      LibSndFile.read_int(@handle, ptr, size)
+    end
+
+    def readf_float(ptr, size)
+      LibSndFile.read_float(@handle, ptr, size)
+    end
+
+    def readf_double(ptr, size)
+      LibSndFile.read_double(@handle, ptr, size)
+    end
+
+    def write_short(ptr, size)
+      LibSndFile.write_short(@handle, ptr, size)
+    end
+
+    def write_raw(ptr, size)
+      LibSndFile.write_raw(@handle, ptr, size)
+    end
+
+    def write_int(ptr, size)
+      LibSndFile.write_int(@handle, ptr, size)
+    end
+
+    def write_float(ptr, size)
+      LibSndFile.write_float(@handle, ptr, size)
+    end
+
+    def write_double(ptr, size)
+      LibSndFile.write_double(@handle, ptr, size)
+    end
+
+    def writef_short(ptr, size)
+      LibSndFile.writef_short(@handle, ptr, size)
+    end
+
+    def writef_int(ptr, size)
+      LibSndFile.writef_int(@handle, ptr, size)
+    end
+
+    def writef_float(ptr, size)
+      LibSndFile.writef_float(@handle, ptr, size)
+    end
+
+    def writef_double(ptr, size)
+      LibSndFile.writef_double(@handle, ptr, size)
+    end
+
+    def seek(frames, whence)
+      whence = LibSndFile::Whence.parse(whence)
+      LibSndFile.seek(@handle, frames, whence)
+    end
+
+    def close
+      LibSndFile.close(@handle)
+    end
+
+    def error_number
+      LibSndFile.error(@handle)
+    end
+
+    def error_to_s
+      String.new(LibSndFile.str_error(error_number))
+    end
+
+    def no_error?
+      0 == error_number
+    end
+
+    def format_check
+      sf_true == LibSndFile.format_check(pointerof(@info))
+    end
+
+    def format_raw
+      @info.format
+    end
+
+    def sub_type
+      mask_subtype = LibSndFile::Masks::SF_FORMAT_SUBMASK.value
+      LibSndFile::Subtypes.from_value(@info.format & mask_subtype).to_s
+    end
+
+    def format_type
+      mask_format = LibSndFile::Masks::SF_FORMAT_TYPEMASK.value
+      LibSndFile::Formats.from_value(@info.format & mask_format).to_s
+    end
+
+    def endian_type
+      mask_end = LibSndFile::Masks::SF_FORMAT_ENDMASK.value
+      LibSndFile::Endians.from_value(@info.format & mask_end).to_s
+    end
+
+    def format_to_hash
+      {
+        "subtype" => sub_type,
+        "format"  => format_type,
+        "endian"  => endian_type,
+      }
+    end
+
+    def format_to_tuple
+      {
+        sub_type,
+        format_type,
+        endian_type,
+      }
+    end
+
+    def format_to_s
+      "Format: " + format_type + ", Subtype: " + sub_type + ", Endian: " + endian_type
+    end
+
+    def sample_rate
+      @info.samplerate
+    end
+
+    def frames
+      @info.frames
+    end
+
+    def channels
+      @info.channels
+    end
+
+    def sections
+      @info.channels
+    end
+
+    def seekable?
+      @info.seekable == 1
+    end
+
+    def size
+      Int32.new(@info.frames * @info.channels)
+    end
+
+    def version
+      ver = Bytes.new(25)
+      cmd = LibSndFile::Command::SFC_GET_LIB_VERSION
+      LibSndFile.command(@handle, cmd, ver, ver.size)
+      String.new(ver).strip
+    end
+
+    def get_log_info
+      log = Slice.new(2048, Char)
+      #    log = Bytes.new(2048)
+      cmd = LibSndFile::Command::SFC_GET_LOG_INFO
+      LibSndFile.command(@handle, cmd, log, log.size)
+      #    return nil unless LibSndFile.command(@handle, cmd, log, log.size) > 0
+      #    String.new(log)
+    end
+
+    def calc_signal_max
+      max = Float64.new(0.0)
+      max_ptr = pointerof(max)
+      cmd = LibSndFile::Command::SFC_CALC_SIGNAL_MAX
+      return nil unless LibSndFile.command(@handle, cmd, max_ptr, sizeof(Float64)) == 0
+      max
+    end
+
+    def calc_norm_signal_max
+      max = Float64.new(0.0)
+      max_ptr = pointerof(max)
+      cmd = LibSndFile::Command::SFC_CALC_NORM_SIGNAL_MAX
+      return nil unless LibSndFile.command(@handle, cmd, max_ptr, sizeof(Float64)) == 0
+      max
+    end
+
+    def calc_max_all_channels
+      max = Slice.new(channels, Float64.new(0.0))
+      cmd = LibSndFile::Command::SFC_CALC_MAX_ALL_CHANNELS
+      return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 0
+      max.to_a
+    end
+
+    def calc_norm_max_all_channels
+      max = Slice.new(channels, Float64.new(0.0))
+      cmd = LibSndFile::Command::SFC_CALC_NORM_MAX_ALL_CHANNELS
+      return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 0
+      max.to_a
+    end
+
+    def get_signal_max
+      max = Float64.new(0.0)
+      max_ptr = pointerof(max)
+      cmd = LibSndFile::Command::SFC_GET_SIGNAL_MAX
+      return nil unless LibSndFile.command(@handle, cmd, max_ptr, sizeof(Float64)) == 1
+      max
+    end
+
+    def get_max_all_channels
+      max = Slice.new(channels, Float64.new(0.0))
+      cmd = LibSndFile::Command::SFC_GET_MAX_ALL_CHANNELS
+      return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 1
+      max.to_a
+    end
+
+    def set_norm_float(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_SET_NORM_FLOAT
+      LibSndFile.command(@handle, cmd, nil, true_false)
+    end
+
+    def set_norm_double(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_SET_NORM_DOUBLE
+      LibSndFile.command(@handle, cmd, nil, true_false)
+    end
+
+    def get_norm_float
+      cmd = LibSndFile::Command::SFC_GET_NORM_FLOAT
+      LibSndFile.command(@handle, cmd, nil, 0)
+    end
+
+    def get_norm_double
+      cmd = LibSndFile::Command::SFC_GET_NORM_DOUBLE
+      LibSndFile.command(@handle, cmd, nil, 0)
+    end
+
+    def set_scale_float_int_read(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_SET_SCALE_FLOAT_INT_READ
+      LibSndFile.command(@handle, cmd, nil, true_false)
+    end
+
+    def set_scale_int_float_write(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_SET_SCALE_INT_FLOAT_WRITE
+      LibSndFile.command(@handle, cmd, nil, true_false)
+    end
+
+    def get_simple_format_count
+      count = Int32.new(0)
+      count_ptr = pointerof(count)
+      cmd = LibSndFile::Command::SFC_GET_SIMPLE_FORMAT_COUNT
+      return nil unless LibSndFile.command(@handle, cmd, count_ptr, sizeof(Int32)) == 0
+      count
+    end
+
+    def get_simple_format(fmt = 9)
+      format_info = LibSndFile::SFFormatInfo.new
+      format_info.format = fmt
+      ptr = pointerof(format_info)
+      cmd = LibSndFile::Command::SFC_GET_SIMPLE_FORMAT
+      size = sizeof(LibSndFile::SFFormatInfo)
+      return nil unless LibSndFile.command(@handle, cmd, ptr, size) == 0
+      format_info
+    end
+
+    def get_format_info
+      #    #todo
+      #    ptr = get_simple_format()
+      #    pp "ptr = #{ptr.not_nil!.value}"
+      #    puts "format_info = #{format_info}"
+      #    ptr = pointerof(format_info)
+      #    return nil unless
+      #    pp LibSndFile.command(@handle, cmd, ptr.not_nil!, size)
+      #    pp ptr.value
+      raise "get_format_info not yet implemented!"
+    end
+
+    def get_format_major_count
+      count = Int32.new(0)
+      count_ptr = pointerof(count)
+      cmd = LibSndFile::Command::SFC_GET_FORMAT_MAJOR_COUNT
+      raise "format_major_count error" unless LibSndFile.command(@handle, cmd, count_ptr, sizeof(Int32)) == 0
+      count
+    end
+
+    def get_format_subtype_count
+      count = Int32.new(0)
+      count_ptr = pointerof(count)
+      cmd = LibSndFile::Command::SFC_GET_FORMAT_SUBTYPE_COUNT
+      raise "format_subtype_count error" unless LibSndFile.command(@handle, cmd, count_ptr, sizeof(Int32)) == 0
+      count
+    end
+
+    def set_add_peak_chunk(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_SET_ADD_PEAK_CHUNK
+      LibSndFile.command(@handle, cmd, nil, true_false)
+    end
+
+    def update_header_now
+      cmd = LibSndFile::Command::SFC_UPDATE_HEADER_NOW
+      LibSndFile.command(@handle, cmd, nil, 0)
+    end
+
+    def set_update_header_auto(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_SET_UPDATE_HEADER_AUTO
+      LibSndFile.command(@handle, cmd, nil, true_false)
+    end
+
+    def file_truncate(frames : Int32)
+      frames = LibSndFile::SFCount.new(frames)
+      ptr = pointerof(frames)
+      cmd = LibSndFile::Command::SFC_FILE_TRUNCATE
+      LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFCount))
+    end
+
+    def set_raw_start_offset(frames : Int32)
+      frames = LibSndFile::SFCount.new(frames)
+      ptr = pointerof(frames)
+      cmd = LibSndFile::Command::SFC_SET_RAW_START_OFFSET
+      LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFCount))
+    end
+
+    def set_clipping(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_SET_CLIPPING
+      LibSndFile.command(@handle, cmd, nil, true_false)
+    end
+
+    def get_clipping
+      cmd = LibSndFile::Command::SFC_GET_CLIPPING
+      LibSndFile.command(@handle, cmd, nil, 0)
+    end
+
+    def get_embed_file_info
+      data = LibSndFile::SFEmbedFileInfo.new
+      ptr = pointerof(data)
+      cmd = LibSndFile::Command::SFC_GET_EMBED_FILE_INFO
+      LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFEmbedFileInfo))
+    end
+
+    def wavex_get_ambisonic
+      cmd = LibSndFile::Command::SFC_WAVEX_GET_AMBISONIC
+      res = LibSndFile.command(@handle, cmd, nil, 0)
+      return "SF_AMBISONIC_NONE" if res == LibSndFile::Ambisonic::SF_AMBISONIC_NONE.value
+      return "SF_AMBISONIC_B_FORMAT" if res == LibSndFile::Ambisonic::SF_AMBISONIC_B_FORMAT.value
+      res.to_s(16)
+    end
+
+    def wavex_set_ambisonic(ambi)
+      val = LibSndFile::Ambisonic::SF_AMBISONIC_NONE
+      val = LibSndFile::Ambisonic::SF_AMBISONIC_B_FORMAT if ambi == :b_format
+      cmd = LibSndFile::Command::SFC_WAVEX_SET_AMBISONIC
+      res = LibSndFile.command(@handle, cmd, nil, val.value)
+      return "SF_AMBISONIC_NONE" if res == LibSndFile::Ambisonic::SF_AMBISONIC_NONE.value
+      return "SF_AMBISONIC_B_FORMAT" if res == LibSndFile::Ambisonic::SF_AMBISONIC_B_FORMAT.value
+      res
+    end
+
+    def set_vbr_encoding_quality(quality : Float64)
+      if (quality < 0.0) || (quality > 1.0)
+        raise "Error: Invalid vbr encoding quality"
+      end
+      quality_ptr = pointerof(quality)
+      cmd = LibSndFile::Command::SFC_SET_VBR_ENCODING_QUALITY
+      LibSndFile.command(@handle, cmd, quality_ptr, sizeof(Float64))
+    end
+
+    def set_compression_level(level : Float64)
+      if (level < 0.0) || (level > 1.0)
+        raise "Error: Invalid compression level"
+      end
+      level_ptr = pointerof(level)
+      cmd = LibSndFile::Command::SFC_SET_COMPRESSION_LEVEL
+      LibSndFile.command(@handle, cmd, level_ptr, sizeof(Float64))
+    end
+
+    def raw_data_needs_endswap
+      cmd = LibSndFile::Command::SFC_RAW_DATA_NEEDS_ENDSWAP
+      LibSndFile.command(@handle, cmd, nil, 0)
+    end
+
+    def get_broadcast_info
+      # SFC_GET_BROADCAST_INFO         = 0x10F0
+      raise " not yet implemented!"
+    end
+
+    def set_broadcast_info
+      # todo
+      #    SFC_SET_BROADCAST_INFO         = 0x10F0
+      raise "get_broadcast_info not yet implemented!"
+    end
+
+    def set_cart_info
+      # todo
+      # SFC_SET_CART_INFO	Set the Cart Chunk info
+      raise "set_cart_info not yet implemented!"
+    end
+
+    def get_cart_info
+      # todo
+      # SFC_GET_CART_INFO	Retrieve the Cart Chunk info
+      raise "get_cart_info not yet implemented!"
+    end
+
+    def get_loop_info
+      # GET_LOOP_INFO	Get loop info
+      raise " not yet implemented!"
+    end
+
+    def get_instrument
+      # todo
+      # SFC_GET_INSTRUMENT	Get instrument info
+      raise "get_loop_info not yet implemented!"
+    end
+
+    def set_instrument
+      # todo
+      # SFC_SET_INSTRUMENT	Set instrument info
+      raise "set_instrument not yet implemented!"
+    end
+
+    def get_cue_count
+      count = UInt32.new(0)
+      cmd = LibSndFile::Command::SFC_GET_CUE_COUNT
+      res = LibSndFile.command(@handle, cmd, pointerof(count), sizeof(UInt32))
+      raise "Error getting cue count" unless res == 0
+      count
+    end
+
+    def get_cue
+      # SFC_GET_CUE	Get cue marker info
+      raise "get_cue not yet implemented!"
+    end
+
+    def set_cue
+      # todo
+      # SFC_SET_CUE	Set cue marker info
+      raise "set_cue not yet implemented!"
+    end
+
+    def rf64_auto_downgrade(val)
+      true_false = val == :true ? sf_true : sf_false
+      cmd = LibSndFile::Command::SFC_RF64_AUTO_DOWNGRADE
+      LibSndFile.command(@handle, cmd, nil, true_false)
     end
   end
 
-  def self.info
-    LibSndFile::SFInfo.new
-  end
+  # end of SFile
 
-  def open(filename, mode)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    @info.format = 0 if mode == :read
-    @handle = LibSndFile.open(filename, mode, pointerof(@info))
-    no_error?
-  end
-
-  def open(filename, mode)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    @info.format = 0 if mode == :read
-    @handle = LibSndFile.open(filename, mode, pointerof(@info))
-    begin
-      yield self
-    ensure
-      self.close
-    end
-  end
-
-  def open_fd(descriptor : Int32, mode, close_desc = false)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    close_d = close_desc ? 1 : 0
-    @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
-    no_error?
-  end
-
-  def open_fd(descriptor : Int32, mode, close_desc = false)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    close_d = close_desc ? 1 : 0
-    @handle = LibSndFile.open_fd(descriptor, mode, pointerof(@info), close_d)
-    begin
-      yield self
-    ensure
-      self.close
-    end
-  end
-
-  def open_file(file : File, mode, close_desc = false)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    close_d = close_desc ? 1 : 0
-    @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close_d)
-    no_error?
-  end
-
-  def open_file(file : File, mode, close_desc = false)
-    mode = LibSndFile::Mode.parse(mode.to_s)
-    close = close_desc ? 1 : 0
-    @handle = LibSndFile.open_fd(file.fd, mode, pointerof(@info), close)
-    begin
-      yield self
-    ensure
-      self.close
-    end
-  end
-
-  def sf_true
-    LibSndFile::TBool::SF_TRUE
-  end
-
-  def sf_false
-    LibSndFile::TBool::SF_FALSE
-  end
-
-  def extract_format_info(ptr)
-    format_info = ptr.value
-    name = String.new(format_info.name)
-    extension = String.new(format_info.extension)
-    format = format_info.format
-    {name, extension, format}
-  end
-
-  def default_simple_format
-    get_simple_format(fmt = 0)
-  end
-
-  def [](type)
-    get_string(type)
-  end
-
-  def []=(type, str)
-    set_string(str, type)
-  end
-
-  def set_string(str, type)
-    type = LibSndFile::StringType.parse(type).value
-    LibSndFile.set_string(@handle, type, str)
-  end
-
-  def get_string(type)
-    type = LibSndFile::StringType.parse(type).value
-    str = LibSndFile.get_string(@handle, type)
-    return "" unless str
-    String.new(str)
-  end
-
-  def read_raw(ptr, size)
-    LibSndFile.read_raw(@handle, ptr, size)
-  end
-
-  def read_short(ptr, size)
-    LibSndFile.read_short(@handle, ptr, size)
-  end
-
-  def read_int(ptr, size)
-    LibSndFile.read_int(@handle, ptr, size)
-  end
-
-  def read_float(ptr, size)
-    LibSndFile.read_float(@handle, ptr, size)
-  end
-
-  def read_double(ptr, size)
-    LibSndFile.read_double(@handle, ptr, size)
-  end
-
-  def readf_short(ptr, size)
-    LibSndFile.read_short(@handle, ptr, size)
-  end
-
-  def readf_int(ptr, size)
-    LibSndFile.read_int(@handle, ptr, size)
-  end
-
-  def readf_float(ptr, size)
-    LibSndFile.read_float(@handle, ptr, size)
-  end
-
-  def readf_double(ptr, size)
-    LibSndFile.read_double(@handle, ptr, size)
-  end
-
-  def write_short(ptr, size)
-    LibSndFile.write_short(@handle, ptr, size)
-  end
-
-  def write_raw(ptr, size)
-    LibSndFile.write_raw(@handle, ptr, size)
-  end
-
-  def write_int(ptr, size)
-    LibSndFile.write_int(@handle, ptr, size)
-  end
-
-  def write_float(ptr, size)
-    LibSndFile.write_float(@handle, ptr, size)
-  end
-
-  def write_double(ptr, size)
-    LibSndFile.write_double(@handle, ptr, size)
-  end
-
-  def writef_short(ptr, size)
-    LibSndFile.writef_short(@handle, ptr, size)
-  end
-
-  def writef_int(ptr, size)
-    LibSndFile.writef_int(@handle, ptr, size)
-  end
-
-  def writef_float(ptr, size)
-    LibSndFile.writef_float(@handle, ptr, size)
-  end
-
-  def writef_double(ptr, size)
-    LibSndFile.writef_double(@handle, ptr, size)
-  end
-
-  def seek(frames, whence)
-    whence = LibSndFile::Whence.parse(whence)
-    LibSndFile.seek(@handle, frames, whence)
-  end
-
-  def close
-    LibSndFile.close(@handle)
-  end
-
-  def error_number
-    LibSndFile.error(@handle)
-  end
-
-  def error_to_s
-    String.new(LibSndFile.str_error(error_number))
-  end
-
-  def no_error?
-    0 == error_number
-  end
-
-  def format_check
-    sf_true == LibSndFile.format_check(pointerof(@info))
-  end
-
-  def format_raw
-    @info.format
-  end
-
-  def sub_type
-    mask_subtype = LibSndFile::Masks::SF_FORMAT_SUBMASK.value
-    LibSndFile::Subtypes.from_value(@info.format & mask_subtype).to_s
-  end
-
-  def format_type
-    mask_format = LibSndFile::Masks::SF_FORMAT_TYPEMASK.value
-    LibSndFile::Formats.from_value(@info.format & mask_format).to_s
-  end
-
-  def endian_type
-    mask_end = LibSndFile::Masks::SF_FORMAT_ENDMASK.value
-    LibSndFile::Endians.from_value(@info.format & mask_end).to_s
-  end
-
-  def format_to_hash
-    {
-      "subtype" => sub_type,
-      "format"  => format_type,
-      "endian"  => endian_type,
-    }
-  end
-
-  def format_to_tuple
-    {
-      sub_type,
-      format_type,
-      endian_type,
-    }
-  end
-
-  def format_to_s
-    "Format: " + format_type + ", Subtype: " + sub_type + ", Endian: " + endian_type
-  end
-
-  def sample_rate
-    @info.samplerate
-  end
-
-  def frames
-    @info.frames
-  end
-
-  def channels
-    @info.channels
-  end
-
-  def sections
-    @info.channels
-  end
-
-  def seekable?
-    @info.seekable == 1
-  end
-
-  def size
-    Int32.new(@info.frames * @info.channels)
-  end
-
-  def version
-    ver = Bytes.new(25)
-    cmd = LibSndFile::Command::SFC_GET_LIB_VERSION
-    LibSndFile.command(@handle, cmd, ver, ver.size)
-    String.new(ver).strip
-  end
-
-  def get_log_info
-    log = Slice.new(2048, Char)
-#    log = Bytes.new(2048)
-    cmd = LibSndFile::Command::SFC_GET_LOG_INFO
-    LibSndFile.command(@handle, cmd, log, log.size)
-#    return nil unless LibSndFile.command(@handle, cmd, log, log.size) > 0
-#    String.new(log)
-  end
-
-  def calc_signal_max
-    max = Float64.new(0.0)
-    max_ptr = pointerof(max)
-    cmd = LibSndFile::Command::SFC_CALC_SIGNAL_MAX
-    return nil unless LibSndFile.command(@handle, cmd, max_ptr, sizeof(Float64)) == 0
-    max
-  end
-
-  def calc_norm_signal_max
-    max = Float64.new(0.0)
-    max_ptr = pointerof(max)
-    cmd = LibSndFile::Command::SFC_CALC_NORM_SIGNAL_MAX
-    return nil unless LibSndFile.command(@handle, cmd, max_ptr, sizeof(Float64)) == 0
-    max
-  end
-
-  def calc_max_all_channels
-    max = Slice.new(channels, Float64.new(0.0))
-    cmd = LibSndFile::Command::SFC_CALC_MAX_ALL_CHANNELS
-    return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 0
-    max.to_a
-  end
-
-  def calc_norm_max_all_channels
-    max = Slice.new(channels, Float64.new(0.0))
-    cmd = LibSndFile::Command::SFC_CALC_NORM_MAX_ALL_CHANNELS
-    return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 0
-    max.to_a
-  end
-
-  def get_signal_max
-    max = Float64.new(0.0)
-    max_ptr = pointerof(max)
-    cmd = LibSndFile::Command::SFC_GET_SIGNAL_MAX
-    return nil unless LibSndFile.command(@handle, cmd, max_ptr, sizeof(Float64)) == 1
-    max
-  end
-
-  def get_max_all_channels
-    max = Slice.new(channels, Float64.new(0.0))
-    cmd = LibSndFile::Command::SFC_GET_MAX_ALL_CHANNELS
-    return nil unless LibSndFile.command(@handle, cmd, max, sizeof(Float64) * channels) == 1
-    max.to_a
-  end
-
-  def set_norm_float(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_SET_NORM_FLOAT
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
-
-  def set_norm_double(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_SET_NORM_DOUBLE
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
-
-  def get_norm_float
-    cmd = LibSndFile::Command::SFC_GET_NORM_FLOAT
-    LibSndFile.command(@handle, cmd, nil, 0)
-  end
-
-  def get_norm_double
-    cmd = LibSndFile::Command::SFC_GET_NORM_DOUBLE
-    LibSndFile.command(@handle, cmd, nil, 0)
-  end
-
-  def set_scale_float_int_read(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_SET_SCALE_FLOAT_INT_READ
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
-
-  def set_scale_int_float_write(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_SET_SCALE_INT_FLOAT_WRITE
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
-
-  def get_simple_format_count
-    count = Int32.new(0)
-    count_ptr = pointerof(count)
-    cmd = LibSndFile::Command::SFC_GET_SIMPLE_FORMAT_COUNT
-    return nil unless LibSndFile.command(@handle, cmd, count_ptr, sizeof(Int32)) == 0
-    count
-  end
-
-  def get_simple_format(fmt = 9)
-    format_info = LibSndFile::SFFormatInfo.new
-    format_info.format = fmt
-    ptr = pointerof(format_info)
-    cmd = LibSndFile::Command::SFC_GET_SIMPLE_FORMAT
-    size = sizeof(LibSndFile::SFFormatInfo)
-    return nil unless LibSndFile.command(@handle, cmd, ptr, size) == 0
-    format_info
-  end
-
-  def get_format_info
-    #    #todo
-    #    ptr = get_simple_format()
-    #    pp "ptr = #{ptr.not_nil!.value}"
-    #    puts "format_info = #{format_info}"
-    #    ptr = pointerof(format_info)
-    #    return nil unless
-    #    pp LibSndFile.command(@handle, cmd, ptr.not_nil!, size)
-    #    pp ptr.value
-    raise "get_format_info not yet implemented!"
-  end
-
-  def get_format_major_count
-    count = Int32.new(0)
-    count_ptr = pointerof(count)
-    cmd = LibSndFile::Command::SFC_GET_FORMAT_MAJOR_COUNT
-    raise "format_major_count error" unless LibSndFile.command(@handle, cmd, count_ptr, sizeof(Int32)) == 0
-    count
-  end
-
-  def get_format_subtype_count
-    count = Int32.new(0)
-    count_ptr = pointerof(count)
-    cmd = LibSndFile::Command::SFC_GET_FORMAT_SUBTYPE_COUNT
-    raise "format_subtype_count error" unless LibSndFile.command(@handle, cmd, count_ptr, sizeof(Int32)) == 0
-    count
-  end
-
-  def set_add_peak_chunk(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_SET_ADD_PEAK_CHUNK
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
-
-  def update_header_now
-    cmd = LibSndFile::Command::SFC_UPDATE_HEADER_NOW
-    LibSndFile.command(@handle, cmd, nil, 0)
-  end
-
-  def set_update_header_auto(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_SET_UPDATE_HEADER_AUTO
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
-
-  def file_truncate(frames : Int32)
-    frames = LibSndFile::SFCount.new(frames)
-    ptr = pointerof(frames)
-    cmd = LibSndFile::Command::SFC_FILE_TRUNCATE
-    LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFCount))
-  end
-
-  def set_raw_start_offset(frames : Int32)
-    frames = LibSndFile::SFCount.new(frames)
-    ptr = pointerof(frames)
-    cmd = LibSndFile::Command::SFC_SET_RAW_START_OFFSET
-    LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFCount))
-  end
-
-  def set_clipping(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_SET_CLIPPING
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
-
-  def get_clipping
-    cmd = LibSndFile::Command::SFC_GET_CLIPPING
-    LibSndFile.command(@handle, cmd, nil, 0)
-  end
-
-  def get_embed_file_info
-    data = LibSndFile::SFEmbedFileInfo.new
-    ptr = pointerof(data)
-    cmd = LibSndFile::Command::SFC_GET_EMBED_FILE_INFO
-    LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFEmbedFileInfo))
-  end
-
-  def wavex_get_ambisonic
-    cmd = LibSndFile::Command::SFC_WAVEX_GET_AMBISONIC
-    res = LibSndFile.command(@handle, cmd, nil, 0)
-    return "SF_AMBISONIC_NONE" if res == LibSndFile::Ambisonic::SF_AMBISONIC_NONE.value
-    return "SF_AMBISONIC_B_FORMAT" if res == LibSndFile::Ambisonic::SF_AMBISONIC_B_FORMAT.value
-    res.to_s(16)
-  end
-
-  def wavex_set_ambisonic(ambi)
-    val = LibSndFile::Ambisonic::SF_AMBISONIC_NONE
-    val = LibSndFile::Ambisonic::SF_AMBISONIC_B_FORMAT if ambi == :b_format
-    cmd = LibSndFile::Command::SFC_WAVEX_SET_AMBISONIC
-    res = LibSndFile.command(@handle, cmd, nil, val.value)
-    return "SF_AMBISONIC_NONE" if res == LibSndFile::Ambisonic::SF_AMBISONIC_NONE.value
-    return "SF_AMBISONIC_B_FORMAT" if res == LibSndFile::Ambisonic::SF_AMBISONIC_B_FORMAT.value
-    res
-  end
-
-  def set_vbr_encoding_quality(quality : Float64)
-    if (quality < 0.0) || (quality > 1.0)
-      raise "Error: Invalid vbr encoding quality"
-    end
-    quality_ptr = pointerof(quality)
-    cmd = LibSndFile::Command::SFC_SET_VBR_ENCODING_QUALITY
-    LibSndFile.command(@handle, cmd, quality_ptr, sizeof(Float64))
-  end
-
-  def set_compression_level(level : Float64)
-    if (level < 0.0) || (level > 1.0)
-      raise "Error: Invalid compression level"
-    end
-    level_ptr = pointerof(level)
-    cmd = LibSndFile::Command::SFC_SET_COMPRESSION_LEVEL
-    LibSndFile.command(@handle, cmd, level_ptr, sizeof(Float64))
-  end
-
-  def raw_data_needs_endswap
-    cmd = LibSndFile::Command::SFC_RAW_DATA_NEEDS_ENDSWAP
-    LibSndFile.command(@handle, cmd, nil, 0)
-  end
-
-  def get_broadcast_info
-    # SFC_GET_BROADCAST_INFO         = 0x10F0
-    raise " not yet implemented!"
-  end
-
-  def set_broadcast_info
-    # todo
-    #    SFC_SET_BROADCAST_INFO         = 0x10F0
-    raise "get_broadcast_info not yet implemented!"
-  end
-
-  def set_cart_info
-    # todo
-    # SFC_SET_CART_INFO	Set the Cart Chunk info
-    raise "set_cart_info not yet implemented!"
-  end
-
-  def get_cart_info
-    # todo
-    # SFC_GET_CART_INFO	Retrieve the Cart Chunk info
-    raise "get_cart_info not yet implemented!"
-  end
-
-  def get_loop_info
-    # GET_LOOP_INFO	Get loop info
-    raise " not yet implemented!"
-  end
-
-  def get_instrument
-    # todo
-    # SFC_GET_INSTRUMENT	Get instrument info
-    raise "get_loop_info not yet implemented!"
-  end
-
-  def set_instrument
-    # todo
-    # SFC_SET_INSTRUMENT	Set instrument info
-    raise "set_instrument not yet implemented!"
-  end
-
-  def get_cue_count
-    count = UInt32.new(0)
-    cmd = LibSndFile::Command::SFC_GET_CUE_COUNT
-    res = LibSndFile.command(@handle, cmd, pointerof(count), sizeof(UInt32))
-    raise "Error getting cue count" unless res == 0
-    count
-  end
-
-  def get_cue
-    # SFC_GET_CUE	Get cue marker info
-    raise "get_cue not yet implemented!"
-  end
-
-  def set_cue
-    # todo
-    # SFC_SET_CUE	Set cue marker info
-    raise "set_cue not yet implemented!"
-  end
-
-  def rf64_auto_downgrade(val)
-    true_false = val == :true ? sf_true : sf_false
-    cmd = LibSndFile::Command::SFC_RF64_AUTO_DOWNGRADE
-    LibSndFile.command(@handle, cmd, nil, true_false)
-  end
 end
 
 # end of SoundFile

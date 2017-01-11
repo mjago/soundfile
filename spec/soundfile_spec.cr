@@ -2,8 +2,10 @@ require "./spec_helper"
 require "tempfile"
 require "./../../soundfile/src/soundfile.cr"
 
-describe SoundFile do
-  a = SoundFile.new
+include SoundFile
+
+describe SFile do
+  a = SFile.new
   test_wav = "spec/data/wave.wav"
   short = Array(Int16).new
   int = Array(Int32).new
@@ -11,23 +13,23 @@ describe SoundFile do
   double = Array(Float64).new
 
   it "is a Class" do
-    SoundFile.is_a?(Class).should eq(true)
+    SFile.is_a?(Class).should eq(true)
   end
 
-  it "instantiates a new SoundFile class when passed no arguments" do
-    a.class.should eq(SoundFile)
+  it "instantiates a new SFile class when passed no arguments" do
+    a.class.should eq(SFile)
   end
 
   it "can be passed a LibSndFile::SFInfo object on instantiation" do
-    b = SoundFile.new(a.info)
-    b.class.should eq(SoundFile)
+    b = SFile.new(a.info)
+    b.class.should eq(SFile)
     b.info.should eq(a.info)
-    b.info.class.should eq(LibSndFile::SFInfo)
+    b.info.class.should eq(SFile.info.class)
     b.close
 
-    info = LibSndFile::SFInfo.new
-    b = SoundFile.new(info)
-    b.class.should eq(SoundFile)
+    info = SFile.info
+    b = SFile.new(info)
+    b.class.should eq(SFile)
     b.info.should eq(a.info)
     b.close
   end
@@ -36,7 +38,6 @@ describe SoundFile do
     it "returns false when opening a non-existing file for read" do
       a.open("invalid.wav", :read).should eq false
       a.close
-
     end
 
     it "returns true when opening a valid file for read" do
@@ -51,15 +52,15 @@ describe SoundFile do
 
     it "can be invoked with a block" do
       a.open("test_wav", :read) do |sf|
-        sf.class.should eq SoundFile
-        sf.info.class.should eq LibSndFile::SFInfo
+        sf.class.should eq SFile
+        sf.info.class.should eq SFile.info.class
       end
     end
 
-#    it "returns true when opening a file for write" do
-#      a.open(test_wav, :write).should be_true
-#      a.close
-#    end
+    #    it "returns true when opening a file for write" do
+    #      a.open(test_wav, :write).should be_true
+    #      a.close
+    #    end
   end
 
   describe "#close" do
@@ -78,8 +79,8 @@ describe SoundFile do
 
       it "can be invoked with a block" do
         a.open_fd(f.fd, :read) do |sf|
-          sf.class.should eq SoundFile
-          sf.info.class.should eq LibSndFile::SFInfo
+          sf.class.should eq SFile
+          sf.info.class.should eq SFile.info.class
         end
       end
     end
@@ -96,22 +97,22 @@ describe SoundFile do
     File.open(test_wav, "r") do |f|
       it "can be invoked with a block" do
         a.open_file(f, :read) do |sf|
-          sf.class.should eq SoundFile
-          sf.info.class.should eq LibSndFile::SFInfo
+          sf.class.should eq SFile
+          sf.info.class.should eq SFile.info.class
         end
       end
     end
   end
 
   describe "@open" do
-    it "can call open on Soundfile" do
-      SoundFile.open(test_wav, :read) do |sf|
+    it "can call open on SFile" do
+      SFile.open(test_wav, :read) do |sf|
         sf.error_number.should eq 0
-        sf.class.should eq SoundFile
-        sf.info.class.should eq LibSndFile::SFInfo
+        sf.class.should eq SFile
+        sf.info.class.should eq SFile.info.class
         ptr = Slice.new(sf.size, Int32.new(0))
         sf.read_int(ptr, sf.size).should eq sf.size
-        SoundFile.open("spec/data/write5.wav", :write, sf.info) do |sf_out|
+        SFile.open("spec/data/write5.wav", :write, sf.info) do |sf_out|
           sf.size
           sf_out.write_int(ptr, sf.size)
           sf.error_to_s
@@ -122,12 +123,12 @@ describe SoundFile do
 
   describe "self.open" do
     it "can be invoked with a block" do
-      SoundFile.open(test_wav, :read) do |sf|
+      SFile.open(test_wav, :read) do |sf|
         sf.error_number.should eq 0
         sf.size.should eq 256_000
         ptr = Slice.new(sf.size, Int32.new(0))
         sf.read_int(ptr, sf.size).should eq sf.size
-        SoundFile.open("spec/data/write5.wav", :write, sf.info) do |sf_out|
+        SFile.open("spec/data/write5.wav", :write, sf.info) do |sf_out|
           sf.error_number.should eq 0
           sf.size.should eq sf.size
           size = sf_out.write_int(ptr, sf.size)
@@ -139,11 +140,11 @@ describe SoundFile do
 
   describe "#set_string/get_string" do
     it "can write meta data to a file open for write" do
-      info = SoundFile.info
+      info = SFile.info
       info.format = 0x10002
       info.channels = 2
       info.samplerate = 44_100
-      sf = SoundFile.new(info)
+      sf = SFile.new(info)
       sf.open("spec/data/write.wav", :write)
       sf.error_number.should eq 0
       sf.set_string("My Title", "title")
@@ -151,23 +152,23 @@ describe SoundFile do
       sf.get_string("title").should eq "My Title"
       sf.close
 
-      info = SoundFile.info
+      info = SFile.info
       info.format = 0x10002
       info.channels = 2
       info.samplerate = 44_100
-      sf = SoundFile.new(info)
+      sf = SFile.new(info)
       sf.open("spec/data/write.wav", :write) do |sf|
         sf.get_string("title").should eq ""
         sf.set_string("My Title", "title")
         sf.get_string("title").should eq "My Title"
         sf["title"].should eq "My Title"
-       end
+      end
 
-      info = SoundFile.info
+      info = SFile.info
       info.format = 0x10002
       info.channels = 2
       info.samplerate = 44_100
-      SoundFile.open("spec/data/write.wav", :write, info) do |sf|
+      SFile.open("spec/data/write.wav", :write, info) do |sf|
         sf.error_number.should eq 0
         sf.get_string("title").should eq ""
         sf.set_string("My Title", "title")
@@ -180,12 +181,12 @@ describe SoundFile do
   describe "#set_string/get_string" do
     it "can write meta data to a file open for write" do
       File.open("spec/data/write3.wav", "w") do |f|
-        info = SoundFile.info
+        info = SFile.info
         info.format = 0x10002
         info.channels = 2
         info.samplerate = 44_100
-        b = SoundFile.new(info)
-        b.open_file(f, :write)#.should be_true
+        b = SFile.new(info)
+        b.open_file(f, :write) # .should be_true
         b.error_number.should eq 0
         b.get_string("title").should eq ""
         b.set_string("My Title", "title")
@@ -198,7 +199,7 @@ describe SoundFile do
 
   describe "#[]" do
     it "can write meta data to a file open for write" do
-      info = SoundFile.info
+      info = SFile.info
       info.format = 0x10002
       info.channels = 2
       info.samplerate = 44_100
@@ -439,8 +440,8 @@ describe SoundFile do
     it "returns format as a hash" do
       a.open(test_wav, :read)
       a.format_to_hash.should eq({"subtype" => "PCM_16",
-                                  "format" => "WAV",
-                                  "endian" => "FILE"})
+        "format"  => "WAV",
+        "endian"  => "FILE"})
       a.close
     end
   end
@@ -495,7 +496,7 @@ describe SoundFile do
 
   describe "seekable?" do
     it "returns number of seekable" do
-      SoundFile.open(test_wav, :read) do |sf|
+      SFile.open(test_wav, :read) do |sf|
         sf.seekable?.should be_true
         sf.close
       end
@@ -504,7 +505,7 @@ describe SoundFile do
 
   describe "size" do
     it "returns size (frames * channels)" do
-      SoundFile.open(test_wav, :read) do |sf|
+      SFile.open(test_wav, :read) do |sf|
         sf.size.should eq 256_000
         sf.close
       end
@@ -530,7 +531,7 @@ describe SoundFile do
 
   describe "#calc_signal_max" do
     it "calculates the measured maximum signal value" do
-      SoundFile.open(test_wav, :read) do |sf|
+      SFile.open(test_wav, :read) do |sf|
         sf.calc_signal_max.should eq 9357.0
         sf.close
       end
@@ -539,7 +540,7 @@ describe SoundFile do
 
   describe "#calc_norm_signal_max" do
     it "calculates the measured normalised maximum signal value" do
-      SoundFile.open(test_wav, :read) do |sf|
+      SFile.open(test_wav, :read) do |sf|
         sf.calc_norm_signal_max.should eq 0.285552978515625
         sf.close
       end
@@ -654,8 +655,8 @@ describe SoundFile do
 
   describe "#update_header_now" do
     pending "" do
-    cmd = LibSndFile::Command::SFC_UPDATE_HEADER_NOW
-    LibSndFile.command(@handle, cmd, nil, 0)
+      cmd = LibSndFile::Command::SFC_UPDATE_HEADER_NOW
+      LibSndFile.command(@handle, cmd, nil, 0)
     end
   end
 
@@ -840,22 +841,7 @@ describe SoundFile do
   end
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#describe Tempfile do
+# describe Tempfile do
 #  it "should have size 6" do
 #    tempfile = Tempfile.open("foo") do |file|
 #      path = file.path
@@ -865,7 +851,7 @@ end
 #      puts File.read_lines(path).should eq [] of Char
 #    end
 #  end
-#end
+# end
 
 # File.size(tempfile.path)       # => 6
 # File.stat(tempfile.path).mtime # => 2015-10-20 13:11:12 UTC
