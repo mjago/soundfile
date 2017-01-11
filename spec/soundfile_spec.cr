@@ -390,16 +390,20 @@ describe SFile do
 
   describe "#format_check" do
     it "returns true if format check ok" do
-      a.open(test_wav, :read)
       a.format_check.should be_true
       a.close
     end
   end
 
   describe "#format_check" do
-    pending "returns false if format invalid" do
-      a.open(test_wav, :read)
+    it "returns false if format invalid" do
+      a.info.format = 0
       a.format_check.should be_false
+      puts((LibSndFile::Formats::WAV.value | LibSndFile::Subtypes::PCM_16.value  | LibSndFile::Endians::BIG.value).to_s(16))
+      a.info.format = (LibSndFile::Formats::WAV.value |
+                       LibSndFile::Subtypes::PCM_16.value |
+                       LibSndFile::Endians::FILE.value)
+      a.format_check.should be_true
       a.close
     end
   end
