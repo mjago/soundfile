@@ -641,7 +641,22 @@ describe SFile do
   end
 
   describe "#get_format_info" do
-    pending "retrieves info about a major or subtype format" do
+    it "retrieves info about a major format" do
+      finfo = SFile.format_info
+      finfo.format = (LibSndFile::Formats::WAV.value)
+      finfo = a.get_format_info(finfo)
+      String.new(finfo.name).should eq "WAV (Microsoft)"
+      String.new(finfo.extension).should eq "wav"
+      finfo.format.to_s(16).should eq "10000"
+      finfo.format = (LibSndFile::Formats::WAV.value)
+    end
+
+    it "retrieves info about a subtype format" do
+      finfo = SFile.format_info
+      finfo.format = (LibSndFile::Subtypes::PCM_16.value)
+      finfo = a.get_format_info(finfo)
+      String.new(finfo.name).should eq "Signed 16 bit PCM"
+      finfo.format.to_s(16).should eq "2"
     end
   end
 

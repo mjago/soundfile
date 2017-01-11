@@ -367,6 +367,10 @@ module SoundFile
       LibSndFile::SFInfo.new
     end
 
+    def self.format_info
+      LibSndFile::SFFormatInfo.new
+    end
+
     def open(filename, mode)
       mode = LibSndFile::Mode.parse(mode.to_s)
       @info.format = 0 if mode == :read
@@ -728,7 +732,7 @@ module SoundFile
     end
 
     def get_simple_format(fmt = 9)
-      format_info = LibSndFile::SFFormatInfo.new
+      format_info = SFile.format_info
       format_info.format = fmt
       ptr = pointerof(format_info)
       cmd = LibSndFile::Command::SFC_GET_SIMPLE_FORMAT
@@ -737,16 +741,11 @@ module SoundFile
       format_info
     end
 
-    def get_format_info
-      #    #todo
-      #    ptr = get_simple_format()
-      #    pp "ptr = #{ptr.not_nil!.value}"
-      #    puts "format_info = #{format_info}"
-      #    ptr = pointerof(format_info)
-      #    return nil unless
-      #    pp LibSndFile.command(@handle, cmd, ptr.not_nil!, size)
-      #    pp ptr.value
-      raise "get_format_info not yet implemented!"
+    def get_format_info(format_info : LibSndFile::SFFormatInfo)
+      ptr = pointerof(format_info)
+      cmd = LibSndFile::Command::SFC_GET_FORMAT_INFO
+      LibSndFile.command(@handle, cmd, ptr, sizeof(LibSndFile::SFFormatInfo))
+      format_info
     end
 
     def get_format_major_count
