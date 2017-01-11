@@ -36,7 +36,7 @@ end
 ```
 
 ## Dependencies
-1. libsndfile
+1. [libsndfile](http://www.mega-nerd.com/libsndfile/)
 
 ## Development
 
@@ -52,4 +52,4 @@ TODO: Write development instructions here
 
 ## Contributors
 
-- [mjago](https://github.com/mjago) mjago - creator, maintainer
+- [mjago](https://github.com/mjago) - creator, maintainer
