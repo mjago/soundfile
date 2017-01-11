@@ -633,12 +633,11 @@ module SoundFile
     end
 
     def get_log_info
-      log = Slice.new(2048, Char)
-      #    log = Bytes.new(2048)
+      log = Slice.new(2048, UInt8.new(0x20))
       cmd = LibSndFile::Command::SFC_GET_LOG_INFO
-      LibSndFile.command(@handle, cmd, log, log.size)
-      #    return nil unless LibSndFile.command(@handle, cmd, log, log.size) > 0
-      #    String.new(log)
+      size = LibSndFile.command(@handle, cmd, log, log.size)
+      return "" if size == 0
+      (String.new(log).strip)[0..-2]
     end
 
     def calc_signal_max

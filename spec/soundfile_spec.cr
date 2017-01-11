@@ -399,7 +399,6 @@ describe SFile do
     it "returns false if format invalid" do
       a.info.format = 0
       a.format_check.should be_false
-      puts((LibSndFile::Formats::WAV.value | LibSndFile::Subtypes::PCM_16.value  | LibSndFile::Endians::BIG.value).to_s(16))
       a.info.format = (LibSndFile::Formats::WAV.value |
                        LibSndFile::Subtypes::PCM_16.value |
                        LibSndFile::Endians::FILE.value)
@@ -532,10 +531,10 @@ describe SFile do
   end
 
   describe "#get_log_info" do
-    pending "returns log info string" do
-      a.open("spec/data/write.wav", :write)
-      a["title"] = "My Title"
-      a.get_log_info
+    it "returns log info string" do
+      SFile.open("invalid.wav", :read, a.info) do |outfile|
+        outfile.get_log_info.should eq "File : invalid.wav\n"
+      end
       a.close
     end
   end
