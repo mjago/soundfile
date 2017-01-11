@@ -18,21 +18,20 @@ dependencies:
 
 ```crystal
 require "soundfile"
+include SoundFile
 ```
 
 ### Read and write files
 
 ```crystal
-
-SoundFile.open("read.wav", :read) do |sf_in|
+SFile.open("read.wav", :read) do |sf_in|
   ptr = Slice.new(sf_in.size, Int32.new(0))
   sf.read_int(ptr, sf_in.size)
 
-  SoundFile.open("write.wav", :write, sf_in.info) do |sf_out|
+  SFile.open("write.wav", :write, sf_in.info) do |sf_out|
     sf_out.write_int(ptr, sf_in.size)
   end
 end
-
 ```
 
 See specs and [libsndfile](http://www.mega-nerd.com/libsndfile/) for further usage
