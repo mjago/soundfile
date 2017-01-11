@@ -20,5 +20,4 @@ install:
   #  - find /usr/local/lib -type f -name "*.la" -exec sudo rm -f {} \+
 
 script:
-  - pwd
-  - crystal spec ../../spec/soundfile_spec.cr
+  - cd ../../ && crystal spec spec/soundfile_spec.cr
