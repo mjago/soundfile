@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mjago/soundfile.svg?branch=master)](https://travis-ci.org/mjago/CW)
+
 # soundfile
 
 TODO: Write a description here
